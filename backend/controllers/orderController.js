@@ -5,10 +5,10 @@ class OrderController {
     // POST /api/orders
     async create(req, res) {
         try {
-            const { customerName, customerPhone, customerAddress, totalAmount, paymentMethod, items } = req.body;
+            const { customerName, customerPhone, customerAddress, totalAmount, paymentMethod, note, items } = req.body;
             const userId = req.user ? req.user.id : null;
 
-            const orderData = { userId, customerName, customerPhone, customerAddress, totalAmount, paymentMethod };
+            const orderData = { userId, customerName, customerPhone, customerAddress, totalAmount, paymentMethod, note };
             const result = await orderService.createOrder(orderData, items);
 
             // Tạo thông báo cho admin (không block response nếu lỗi)

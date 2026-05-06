@@ -70,7 +70,14 @@ class AuthService {
 
         return {
             token,
-            user: { id: user.id, email: user.email, name: payload.user.name, role: user.role }
+            user: {
+                id:      user.id,
+                email:   user.email,
+                name:    payload.user.name,
+                role:    user.role,
+                phone:   user.phone   || '',
+                address: user.address || '',
+            }
         };
     }
 

@@ -147,7 +147,7 @@ const AdminDashboard: React.FC = () => {
         <StatCard
           label="Sản phẩm"
           value={fmtNum(prod.totalProducts || 0)}
-          sub={`${prod.outOfStock || 0} hết hàng | ${prod.lowStock || 0} sắp hết`}
+          sub={`${prod.activeProducts ?? prod.totalProducts ?? 0} đang bán | ${prod.hiddenProducts || 0} ẩn`}
           icon={Package} color="text-orange-600" bg="bg-orange-50"
         />
         <StatCard

@@ -24,10 +24,11 @@ class DashboardRepository {
             pool.request().query(`
                 SELECT 
                     COUNT(id)                                                  AS totalProducts,
-                    COUNT(CASE WHEN stock = 0  THEN 1 END)                    AS outOfStock,
-                    COUNT(CASE WHEN stock < 5 AND stock > 0 THEN 1 END)       AS lowStock
+                    COUNT(CASE WHEN stock = 0            THEN 1 END)           AS outOfStock,
+                    COUNT(CASE WHEN stock < 5 AND stock > 0 THEN 1 END)       AS lowStock,
+                    COUNT(CASE WHEN status = 'active'    THEN 1 END)           AS activeProducts,
+                    COUNT(CASE WHEN status != 'active'   THEN 1 END)           AS hiddenProducts
                 FROM Products
-                WHERE status = 'active'
             `),
             pool.request().query(`
                 SELECT 

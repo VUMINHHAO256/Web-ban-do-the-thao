@@ -6,12 +6,12 @@ class ProductService {
         return await productRepository.findAll(filters);
     }
 
-    // Tìm kiếm theo tên
-    async searchProducts(keyword) {
+    // Tìm kiếm theo tên (tùy chọn lọc theo brand)
+    async searchProducts(keyword, brand = null) {
         if (!keyword || keyword.trim().length < 2) {
             throw new Error('Từ khóa tìm kiếm phải có ít nhất 2 ký tự');
         }
-        return await productRepository.search(keyword.trim());
+        return await productRepository.search(keyword.trim(), brand);
     }
 
     async getProductById(id) {

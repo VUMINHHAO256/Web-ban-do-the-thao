@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Search, X, Users, Trash2 } from 'lucide-react';
 import api from '../../services/api';
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(n);
+const fmt = (n: number | null | undefined) =>
+  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(n || 0);
 const fmtDate = (s: string) => s ? new Date(s).toLocaleDateString('vi-VN') : '—';
 
 interface User {
@@ -99,7 +99,7 @@ const AdminUsers: React.FC = () => {
                     <td className="px-4 py-3 text-gray-500">{u.email}</td>
                     <td className="px-4 py-3 text-gray-500">{u.phone || '—'}</td>
                     <td className="px-4 py-3 text-center">
-                      <span className="bg-blue-50 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{u.orderCount}</span>
+                      <span className="bg-blue-50 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{u.orderCount ?? 0}</span>
                     </td>
                     <td className="px-4 py-3 font-semibold text-primary">{fmt(u.totalSpent)}</td>
                     <td className="px-4 py-3 text-gray-400 text-xs">{fmtDate(u.createdAt)}</td>

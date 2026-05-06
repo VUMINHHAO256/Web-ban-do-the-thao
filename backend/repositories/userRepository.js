@@ -20,14 +20,31 @@ class UserRepository {
         const pool = await this._getPool();
         const result = await pool.request()
             .input('id', sql.Int, id)
-            .query('SELECT id, firstName, lastName, email, phone, role, createdAt FROM Users WHERE id = @id');
+            .query('SELECT id, firstName, lastName, email, phone, address, role, createdAt FROM Users WHERE id = @id');
         return result.recordset[0];
     }
 
     async findAll() {
         const pool = await this._getPool();
         const result = await pool.request()
-            .query('SELECT id, firstName, lastName, email, phone, role, createdAt FROM Users ORDER BY createdAt DESC');
+            .query(`
+                SELECT 
+                    u.id,
+                    u.firstName,
+                    u.lastName,
+                    u.firstName + ' ' + u.lastName AS fullName,
+                    u.email,
+                    u.phone,
+                    u.address,
+                    u.role,
+                    u.createdAt,
+                    COUNT(o.id)       AS orderCount,
+                    ISNULL(SUM(o.totalAmount), 0) AS totalSpent
+                FROM Users u
+                LEFT JOIN Orders o ON o.userId = u.id
+                GROUP BY u.id, u.firstName, u.lastName, u.email, u.phone, u.address, u.role, u.createdAt
+                ORDER BY u.createdAt DESC
+            `);
         return result.recordset;
     }
 
@@ -46,12 +63,13 @@ class UserRepository {
     async update(id, userData) {
         const pool = await this._getPool();
         await pool.request()
-            .input('id', sql.Int, id)
+            .input('id',        sql.Int,      id)
             .input('firstName', sql.NVarChar, userData.firstName)
-            .input('lastName', sql.NVarChar, userData.lastName)
-            .input('phone', sql.VarChar, userData.phone || null)
+            .input('lastName',  sql.NVarChar, userData.lastName)
+            .input('phone',     sql.VarChar,  userData.phone   || null)
+            .input('address',   sql.NVarChar, userData.address || null)
             .query(`UPDATE Users 
-                    SET firstName=@firstName, lastName=@lastName, phone=@phone 
+                    SET firstName=@firstName, lastName=@lastName, phone=@phone, address=@address
                     WHERE id=@id`);
     }
 

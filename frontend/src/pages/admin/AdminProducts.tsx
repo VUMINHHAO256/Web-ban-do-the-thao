@@ -281,13 +281,40 @@ const AdminProducts: React.FC = () => {
 
               <div className="grid grid-cols-3 gap-3">
                 <Field label="Giá bán (VNĐ) *">
-                  <input type="number" className={inputCls} value={form.price || ''} onChange={e => setF('price', +e.target.value)} />
+                  <input
+                    type="number"
+                    className={inputCls}
+                    value={form.price || ''}
+                    min={0}
+                    step={1000}
+                    onChange={e => setF('price', Math.max(0, +e.target.value))}
+                    onBlur={e => { if (+e.target.value < 0) setF('price', 0); }}
+                    placeholder="0"
+                  />
                 </Field>
                 <Field label="Giá gốc (VNĐ)">
-                  <input type="number" className={inputCls} value={form.oldPrice || ''} onChange={e => setF('oldPrice', +e.target.value)} />
+                  <input
+                    type="number"
+                    className={inputCls}
+                    value={form.oldPrice || ''}
+                    min={0}
+                    step={1000}
+                    onChange={e => setF('oldPrice', Math.max(0, +e.target.value))}
+                    onBlur={e => { if (+e.target.value < 0) setF('oldPrice', 0); }}
+                    placeholder="0"
+                  />
                 </Field>
                 <Field label="Tồn kho">
-                  <input type="number" className={inputCls} value={form.stock || ''} onChange={e => setF('stock', +e.target.value)} />
+                  <input
+                    type="number"
+                    className={inputCls}
+                    value={form.stock === 0 ? '' : form.stock}
+                    min={0}
+                    step={1}
+                    onChange={e => setF('stock', Math.max(0, Math.floor(+e.target.value)))}
+                    onBlur={e => { if (+e.target.value < 0) setF('stock', 0); }}
+                    placeholder="0"
+                  />
                 </Field>
               </div>
 

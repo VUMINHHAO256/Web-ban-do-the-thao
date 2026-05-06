@@ -13,9 +13,9 @@ const Checkout: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
 
   const [form, setForm] = useState({
-    fullName: user?.name || '',
-    phone: '',
-    address: '',
+    fullName: user?.name    || '',
+    phone:    user?.phone   || '',
+    address:  user?.address || '',
     note: '',
     paymentMethod: 'cod',
   });
@@ -43,17 +43,17 @@ const Checkout: React.FC = () => {
 
     try {
       const orderPayload = {
-        customer_name: form.fullName,
-        customer_phone: form.phone,
-        shipping_address: form.address,
-        note: form.note,
-        payment_method: form.paymentMethod,
-        total_price: total,
+        customerName:    form.fullName,
+        customerPhone:   form.phone,
+        customerAddress: form.address,
+        note:            form.note,
+        paymentMethod:   form.paymentMethod,
+        totalAmount:     total,
         items: items.map(item => ({
-          product_id: Number(item.id),
-          quantity: item.quantity,
-          price: item.price,
-          name: item.name,
+          product_id: item.id,
+          quantity:   item.quantity,
+          price:      item.price,
+          name:       item.name,
         })),
       };
       const res = await api.post('/orders', orderPayload);
@@ -177,8 +177,8 @@ const Checkout: React.FC = () => {
                 <label className="block text-sm font-semibold text-dark mb-2">Phương thức thanh toán</label>
                 <div className="space-y-2">
                   {[
-                    { value: 'cod', label: '💵 Thanh toán khi nhận hàng (COD)' },
-                    { value: 'bank', label: '🏦 Chuyển khoản ngân hàng' },
+                    { value: 'cod',          label: '💵 Thanh toán khi nhận hàng (COD)' },
+                    { value: 'bank_transfer', label: '🏦 Chuyển khoản ngân hàng' },
                   ].map(opt => (
                     <label key={opt.value} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-primary transition-colors">
                       <input type="radio" name="paymentMethod" value={opt.value}

@@ -15,16 +15,20 @@ class UserService {
     }
 
     async updateUser(id, userData) {
-        if (!userData.firstName || !userData.lastName) {
-            throw new Error('Vui lòng điền họ và tên');
-        }
-
         const existing = await userRepository.findById(id);
         if (!existing) {
             throw new Error('Người dùng không tồn tại để cập nhật');
         }
 
-        await userRepository.update(id, userData);
+        // Merge existing values với dữ liệu mới (cho phép partial update)
+        const merged = {
+            firstName: userData.firstName ?? existing.firstName,
+            lastName:  userData.lastName  ?? existing.lastName,
+            phone:     userData.phone     ?? existing.phone,
+            address:   userData.address   ?? existing.address,
+        };
+
+        await userRepository.update(id, merged);
         return { message: 'Cập nhật thông tin thành công' };
     }
 

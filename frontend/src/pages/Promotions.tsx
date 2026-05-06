@@ -45,10 +45,10 @@ const STATIC_COUPONS: Coupon[] = [
 ];
 
 const SALE_CATS = [
-  { label: 'Vợt Giảm Giá',  icon: '🏸', link: '/rackets',     colorClass: 'bg-blue-50 text-blue-700 hover:bg-blue-100' },
-  { label: 'Giày Sale',     icon: '👟', link: '/shoes',       colorClass: 'bg-orange-50 text-orange-700 hover:bg-orange-100' },
-  { label: 'Quần Áo Giảm', icon: '👕', link: '/clothing',    colorClass: 'bg-green-50 text-green-700 hover:bg-green-100' },
-  { label: 'Phụ Kiện KM',  icon: '🎒', link: '/accessories', colorClass: 'bg-purple-50 text-purple-700 hover:bg-purple-100' },
+  { label: 'Vợt Giảm Giá',  image: '/assets/axforce90.jpg',  link: '/rackets',     colorClass: 'bg-blue-50 text-blue-700 hover:bg-blue-100',     border: 'hover:border-blue-400' },
+  { label: 'Giày Sale',     image: '/assets/GiayAce.jpg',    link: '/shoes',       colorClass: 'bg-orange-50 text-orange-700 hover:bg-orange-100', border: 'hover:border-orange-400' },
+  { label: 'Quần Áo Giảm', image: '/assets/aovictor1.jpg',  link: '/clothing',    colorClass: 'bg-green-50 text-green-700 hover:bg-green-100',   border: 'hover:border-green-400' },
+  { label: 'Phụ Kiện KM',  image: '/assets/tuivictor1.jpg', link: '/accessories', colorClass: 'bg-purple-50 text-purple-700 hover:bg-purple-100', border: 'hover:border-purple-400' },
 ];
 
 const TIERS = [
@@ -155,13 +155,21 @@ const Promotions: React.FC = () => {
 
   return (
     <div>
-      {/* ── Hero with Countdown ───────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-red-600 via-orange-500 to-yellow-500 text-white">
-        <div className="max-w-6xl mx-auto px-4 py-14 text-center animate-fade-in">
-          <div className="inline-flex items-center gap-2 bg-white/20 px-4 py-1.5 rounded-full mb-4 text-sm font-bold tracking-wide">
+      {/* ── Banner Hero with real image + Countdown ── */}
+      <section className="relative overflow-hidden" style={{ minHeight: 320 }}>
+        {/* Background image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/assets/Banner2.jpg')" }}
+        />
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-red-700/85 via-orange-600/75 to-yellow-500/60" />
+
+        <div className="relative z-10 max-w-6xl mx-auto px-4 py-14 text-center text-white animate-fade-in">
+          <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-full mb-4 text-sm font-bold tracking-wide">
             <Zap className="w-4 h-4" /> FLASH SALE ĐẶC BIỆT
           </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-1 drop-shadow">KHUYẾN MÃI LỚN</h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-1 drop-shadow-lg">KHUYẾN MÃI LỚN</h1>
           <p className="text-2xl font-extrabold text-yellow-200 mb-2">GIẢM ĐẾN 50%</p>
           <p className="text-white/80 mb-8 text-base">Ưu đãi chưa từng có — Nhanh tay kẻo lỡ!</p>
 
@@ -200,10 +208,19 @@ const Promotions: React.FC = () => {
               <Link
                 key={cat.label}
                 to={cat.link}
-                className={`${cat.colorClass} rounded-xl p-6 text-center font-bold transition-colors block`}
+                className={`group rounded-xl overflow-hidden border-2 border-transparent ${cat.border} transition-all shadow-sm hover:shadow-lg block`}
               >
-                <div className="text-4xl mb-2">{cat.icon}</div>
-                <div className="text-sm">{cat.label}</div>
+                <div className="h-36 overflow-hidden">
+                  <img
+                    src={cat.image}
+                    alt={cat.label}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    onError={(e) => { (e.target as HTMLImageElement).src = '/assets/Banner1.jpg'; }}
+                  />
+                </div>
+                <div className={`${cat.colorClass} py-3 text-center font-bold text-sm transition-colors`}>
+                  {cat.label}
+                </div>
               </Link>
             ))}
           </div>

@@ -14,6 +14,7 @@ class ProductRepository {
             id:          row.id,
             name:        row.name,
             category:    row.category,
+            brand:       row.brand || null,
             price:       row.price,
             old_price:   row.oldPrice > 0 ? row.oldPrice : null,
             image_url:   row.image ? `/assets/${row.image}` : null,
@@ -24,8 +25,8 @@ class ProductRepository {
         };
     }
 
-    // Lấy tất cả sản phẩm (có thể lọc theo category, status)
-    async findAll({ category, status, featured, isNew } = {}) {
+    // Lấy tất cả sản phẩm (có thể lọc theo category, status, brand)
+    async findAll({ category, status, featured, isNew, brand } = {}) {
         const pool = await this._getPool();
         const req = pool.request();
 
@@ -44,6 +45,10 @@ class ProductRepository {
         if (isNew === true || isNew === 'true') {
             where += ' AND isNew = 1';
         }
+        if (brand) {
+            req.input('brand', sql.NVarChar, brand);
+            where += ' AND brand = @brand';
+        }
 
         const result = await req.query(
             `SELECT * FROM Products ${where} ORDER BY name ASC`
@@ -51,12 +56,17 @@ class ProductRepository {
         return result.recordset.map(r => this._mapProduct(r));
     }
 
-    // Tìm kiếm sản phẩm theo tên
-    async search(keyword) {
+    // Tìm kiếm sản phẩm theo tên (có thể thêm brand filter)
+    async search(keyword, brand = null) {
         const pool = await this._getPool();
-        const result = await pool.request()
-            .input('keyword', sql.NVarChar, `%${keyword}%`)
-            .query(`SELECT * FROM Products WHERE name LIKE @keyword AND status = 'active' ORDER BY name ASC`);
+        const req = pool.request().input('keyword', sql.NVarChar, `%${keyword}%`);
+        let query = `SELECT * FROM Products WHERE name LIKE @keyword AND status = 'active'`;
+        if (brand) {
+            req.input('brand', sql.NVarChar, brand);
+            query += ' AND brand = @brand';
+        }
+        query += ' ORDER BY name ASC';
+        const result = await req.query(query);
         return result.recordset.map(r => this._mapProduct(r));
     }
 
@@ -73,17 +83,18 @@ class ProductRepository {
         await pool.request()
             .input('id',         sql.VarChar,   product.id)
             .input('name',       sql.NVarChar,  product.name)
-            .input('category',   sql.NVarChar,  product.category || null)
+            .input('category',   sql.NVarChar,  product.category   || null)
+            .input('brand',      sql.NVarChar,  product.brand      || null)
             .input('price',      sql.Int,        product.price)
-            .input('oldPrice',   sql.Int,        product.oldPrice || 0)
-            .input('image',      sql.VarChar,   product.image || null)
-            .input('stock',      sql.Int,        product.stock || 0)
-            .input('status',     sql.VarChar,   product.status || 'active')
+            .input('oldPrice',   sql.Int,        product.oldPrice   || 0)
+            .input('image',      sql.VarChar,   product.image      || null)
+            .input('stock',      sql.Int,        product.stock      || 0)
+            .input('status',     sql.VarChar,   product.status     || 'active')
             .input('isFeatured', sql.Bit,        product.isFeatured ? 1 : 0)
-            .input('isNew',      sql.Bit,        product.isNew ? 1 : 0)
+            .input('isNew',      sql.Bit,        product.isNew      ? 1 : 0)
             .query(`
-                INSERT INTO Products (id, name, category, price, oldPrice, image, stock, status, isFeatured, isNew)
-                VALUES (@id, @name, @category, @price, @oldPrice, @image, @stock, @status, @isFeatured, @isNew)
+                INSERT INTO Products (id, name, category, brand, price, oldPrice, image, stock, status, isFeatured, isNew)
+                VALUES (@id, @name, @category, @brand, @price, @oldPrice, @image, @stock, @status, @isFeatured, @isNew)
             `);
     }
 
@@ -94,17 +105,18 @@ class ProductRepository {
         const sets = [];
         const req = pool.request().input('id', sql.VarChar, id);
 
-        if (product.name      !== undefined) { req.input('name',       sql.NVarChar, product.name);           sets.push('name=@name'); }
-        if (product.category  !== undefined) { req.input('category',   sql.NVarChar, product.category);       sets.push('category=@category'); }
-        if (product.price     !== undefined) { req.input('price',      sql.Int,       product.price);          sets.push('price=@price'); }
-        if (product.oldPrice  !== undefined) { req.input('oldPrice',   sql.Int,       product.oldPrice);       sets.push('oldPrice=@oldPrice'); }
-        if (product.image     !== undefined) { req.input('image',      sql.VarChar,  product.image);           sets.push('image=@image'); }
-        if (product.stock     !== undefined) { req.input('stock',      sql.Int,       product.stock);          sets.push('stock=@stock'); }
-        if (product.status    !== undefined) { req.input('status',     sql.VarChar,  product.status);          sets.push('status=@status'); }
-        if (product.isFeatured !== undefined){ req.input('isFeatured', sql.Bit,       product.isFeatured ? 1 : 0); sets.push('isFeatured=@isFeatured'); }
-        if (product.isNew     !== undefined) { req.input('isNew',      sql.Bit,       product.isNew ? 1 : 0);  sets.push('isNew=@isNew'); }
+        if (product.name       !== undefined) { req.input('name',       sql.NVarChar, product.name);               sets.push('name=@name'); }
+        if (product.category   !== undefined) { req.input('category',   sql.NVarChar, product.category);           sets.push('category=@category'); }
+        if (product.brand      !== undefined) { req.input('brand',      sql.NVarChar, product.brand || null);      sets.push('brand=@brand'); }
+        if (product.price      !== undefined) { req.input('price',      sql.Int,       product.price);              sets.push('price=@price'); }
+        if (product.oldPrice   !== undefined) { req.input('oldPrice',   sql.Int,       product.oldPrice);           sets.push('oldPrice=@oldPrice'); }
+        if (product.image      !== undefined) { req.input('image',      sql.VarChar,  product.image);               sets.push('image=@image'); }
+        if (product.stock      !== undefined) { req.input('stock',      sql.Int,       product.stock);              sets.push('stock=@stock'); }
+        if (product.status     !== undefined) { req.input('status',     sql.VarChar,  product.status);              sets.push('status=@status'); }
+        if (product.isFeatured !== undefined) { req.input('isFeatured', sql.Bit,       product.isFeatured ? 1 : 0); sets.push('isFeatured=@isFeatured'); }
+        if (product.isNew      !== undefined) { req.input('isNew',      sql.Bit,       product.isNew      ? 1 : 0); sets.push('isNew=@isNew'); }
 
-        if (sets.length === 0) return; // Không có gì để update
+        if (sets.length === 0) return;
         await req.query(`UPDATE Products SET ${sets.join(', ')} WHERE id=@id`);
     }
 

@@ -53,6 +53,15 @@ const Products: React.FC = () => {
   const [sort, setSort] = useState(searchParams.get('sort') || '');
   const [page, setPage] = useState(Number(searchParams.get('page') || 1));
 
+  // Sync state khi URL thay đổi (ví dụ: click từ trang chủ)
+  useEffect(() => {
+    setSearch(searchParams.get('search') || '');
+    setCategory(searchParams.get('category') || '');
+    setBrand(searchParams.get('brand') || '');
+    setSort(searchParams.get('sort') || '');
+    setPage(Number(searchParams.get('page') || 1));
+  }, [searchParams]);
+
   const { addItem } = useCart();
   const { toggleItem, isInWishlist } = useWishlist();
 
@@ -98,6 +107,26 @@ const Products: React.FC = () => {
     setSidebarOpen(false);
   }, [search, category, brand, sort, setSearchParams]);
 
+  // Áp dụng ngay với giá trị mới (tránh stale closure)
+  const applyFiltersWithValues = useCallback(
+    (overrides: { search?: string; category?: string; brand?: string; sort?: string }) => {
+      const newSearch   = overrides.search   !== undefined ? overrides.search   : search;
+      const newCategory = overrides.category !== undefined ? overrides.category : category;
+      const newBrand    = overrides.brand    !== undefined ? overrides.brand    : brand;
+      const newSort     = overrides.sort     !== undefined ? overrides.sort     : sort;
+      const params: Record<string, string> = {};
+      if (newSearch)   params.search   = newSearch;
+      if (newCategory) params.category = newCategory;
+      if (newBrand)    params.brand    = newBrand;
+      if (newSort)     params.sort     = newSort;
+      params.page = '1';
+      setPage(1);
+      setSearchParams(params);
+      setSidebarOpen(false);
+    },
+    [search, category, brand, sort, setSearchParams]
+  );
+
   const clearFilters = () => {
     setSearch(''); setCategory(''); setBrand(''); setSort('');
     setPage(1); setSearchParams({});
@@ -106,7 +135,21 @@ const Products: React.FC = () => {
   const categoryLabel = CATEGORY_OPTIONS.find(c => c.value === category)?.label || 'Tất cả sản phẩm';
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
+    <div>
+      {/* ── Banner Hero ── */}
+      <section className="relative overflow-hidden" style={{ minHeight: 200 }}>
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/assets/88dial3.jpg')" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/80 via-blue-800/60 to-transparent" />
+        <div className="relative z-10 max-w-6xl mx-auto px-4 py-12 text-white animate-fade-in">
+          <h1 className="text-3xl md:text-4xl font-extrabold mb-2 drop-shadow-lg">{categoryLabel}</h1>
+          <p className="text-white/80 text-base">Khám phá hàng trăm sản phẩm cầu lông chính hãng, giá tốt nhất</p>
+        </div>
+      </section>
+
+      <div className="max-w-6xl mx-auto px-4 py-6">
 
       {/* Breadcrumb */}
       <nav className="text-sm text-gray-500 mb-4">
@@ -173,12 +216,26 @@ const Products: React.FC = () => {
           <div className="mb-5">
             <label className="block text-sm font-semibold mb-2 text-dark">Thương hiệu</label>
             <label className="flex items-center gap-2 mb-1 cursor-pointer text-sm">
-              <input type="radio" name="brand" value="" checked={brand === ''} onChange={() => setBrand('')} className="accent-primary" />
+              <input
+                type="radio"
+                name="brand"
+                value=""
+                checked={brand === ''}
+                onChange={() => { setBrand(''); applyFiltersWithValues({ brand: '' }); }}
+                className="accent-primary"
+              />
               Tất cả
             </label>
             {BRAND_OPTIONS.map(b => (
-              <label key={b} className="flex items-center gap-2 mb-1 cursor-pointer text-sm">
-                <input type="radio" name="brand" value={b} checked={brand === b} onChange={() => setBrand(b)} className="accent-primary" />
+              <label key={b} className={`flex items-center gap-2 mb-1 cursor-pointer text-sm ${brand === b ? 'font-bold text-primary' : ''}`}>
+                <input
+                  type="radio"
+                  name="brand"
+                  value={b}
+                  checked={brand === b}
+                  onChange={() => { setBrand(b); applyFiltersWithValues({ brand: b }); }}
+                  className="accent-primary"
+                />
                 {b}
               </label>
             ))}
@@ -293,6 +350,7 @@ const Products: React.FC = () => {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

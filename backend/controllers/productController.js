@@ -1,14 +1,14 @@
 const productService = require('../services/productService');
 
 class ProductController {
-    // GET /api/products?category=X&featured=true&isNew=true&search=keyword&status=active
+    // GET /api/products?category=X&featured=true&isNew=true&search=keyword&status=active&brand=Yonex
     async getAll(req, res) {
         try {
-            const { search, category, featured, isNew, status } = req.query;
+            const { search, category, featured, isNew, status, brand } = req.query;
 
-            // Nếu có từ khóa tìm kiếm → dùng riêng
+            // Nếu có từ khóa tìm kiếm → dùng riêng (có hỗ trợ brand)
             if (search) {
-                const results = await productService.searchProducts(search);
+                const results = await productService.searchProducts(search, brand);
                 return res.json(results);
             }
 
@@ -17,6 +17,7 @@ class ProductController {
             if (status)    filters.status    = status;
             if (featured)  filters.featured  = featured;
             if (isNew)     filters.isNew     = isNew;
+            if (brand)     filters.brand     = brand;
 
             const products = await productService.getAllProducts(filters);
             res.json(products);
