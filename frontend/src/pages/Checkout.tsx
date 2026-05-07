@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle, ArrowLeft, Loader, MapPin, Phone, User, ShoppingBag } from 'lucide-react';
+import { CheckCircle, ArrowLeft, Loader, MapPin, Phone, User, ShoppingBag, Tag } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
@@ -9,7 +9,10 @@ const formatCurrency = (n: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
 
 const Checkout: React.FC = () => {
-  const { items, totalPrice, totalItems, clearCart } = useCart();
+  const {
+    items, totalPrice, totalItems, clearCart,
+    appliedPromo, discountAmount, isFreeShip,
+  } = useCart();
   const { user, isAuthenticated } = useAuth();
 
   const [form, setForm] = useState({
@@ -23,9 +26,19 @@ const Checkout: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [orderId, setOrderId] = useState<number | null>(null);
+  const [savedDiscount, setSavedDiscount] = useState(0);
 
-  const shipping = totalPrice >= 2_000_000 ? 0 : 30_000;
-  const total = totalPrice + shipping;
+  const shipping = isFreeShip ? 0 : (totalPrice >= 2_000_000 ? 0 : 30_000);
+  const grandTotal = totalPrice - discountAmount + shipping;
+
+  // Kiểm tra minOrderAmount — nếu chưa đủ, promo không áp dụng
+  const promoValid = appliedPromo
+    ? (appliedPromo.min === 0 || totalPrice >= appliedPromo.min)
+    : false;
+  const effectiveDiscount = promoValid ? discountAmount : 0;
+  const effectiveFreeShip = promoValid ? isFreeShip : false;
+  const effectiveShipping  = effectiveFreeShip ? 0 : (totalPrice >= 2_000_000 ? 0 : 30_000);
+  const effectiveTotal     = totalPrice - effectiveDiscount + effectiveShipping;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -48,7 +61,8 @@ const Checkout: React.FC = () => {
         customerAddress: form.address,
         note:            form.note,
         paymentMethod:   form.paymentMethod,
-        totalAmount:     total,
+        totalAmount:     effectiveTotal,
+        promoCode:       promoValid ? appliedPromo?.code : undefined,
         items: items.map(item => ({
           product_id: item.id,
           quantity:   item.quantity,
@@ -58,6 +72,7 @@ const Checkout: React.FC = () => {
       };
       const res = await api.post('/orders', orderPayload);
       const newOrderId = res.data?.id || res.data?.orderId || null;
+      setSavedDiscount(res.data?.discountAmount || effectiveDiscount);
       setOrderId(newOrderId);
       clearCart();
       setSuccess(true);
@@ -78,6 +93,11 @@ const Checkout: React.FC = () => {
           </div>
           <h1 className="text-2xl font-extrabold text-dark mb-2">Đặt hàng thành công! 🎉</h1>
           {orderId && <p className="text-gray-500 text-sm mb-1">Mã đơn hàng: <strong className="text-primary">#{orderId}</strong></p>}
+          {savedDiscount > 0 && (
+            <p className="text-green-600 text-sm mb-1 font-semibold">
+              Bạn đã tiết kiệm {formatCurrency(savedDiscount)} với mã giảm giá! 🎁
+            </p>
+          )}
           <p className="text-gray-500 text-sm mb-6">
             Cảm ơn bạn đã mua hàng tại MHShop! Chúng tôi sẽ liên hệ xác nhận đơn hàng sớm nhất.
           </p>
@@ -231,20 +251,58 @@ const Checkout: React.FC = () => {
               ))}
             </div>
 
+            {/* Mã đang áp dụng */}
+            {appliedPromo && promoValid && (
+              <div className="mb-3 flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                <Tag className="w-3 h-3 text-green-600 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-green-700">{appliedPromo.code}</p>
+                  <p className="text-xs text-green-600 truncate">{appliedPromo.discount}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Cảnh báo nếu promo chưa đủ min */}
+            {appliedPromo && !promoValid && (
+              <div className="mb-3 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
+                <p className="text-xs text-orange-600">
+                  ⚠ Mã <strong>{appliedPromo.code}</strong> yêu cầu đơn tối thiểu {formatCurrency(appliedPromo.min)}
+                </p>
+              </div>
+            )}
+
             <div className="border-t border-gray-100 pt-3 space-y-2 text-sm">
               <div className="flex justify-between text-gray-600">
                 <span>Tạm tính</span>
                 <span>{formatCurrency(totalPrice)}</span>
               </div>
+
+              {effectiveDiscount > 0 && (
+                <div className="flex justify-between text-green-600 font-medium">
+                  <span className="flex items-center gap-1">
+                    <Tag className="w-3 h-3" /> Giảm giá
+                  </span>
+                  <span>-{formatCurrency(effectiveDiscount)}</span>
+                </div>
+              )}
+
+              {effectiveFreeShip && (
+                <div className="flex justify-between text-green-600 font-medium">
+                  <span>Miễn phí ship</span>
+                  <span>-{formatCurrency(totalPrice >= 2_000_000 ? 0 : 30_000)}</span>
+                </div>
+              )}
+
               <div className="flex justify-between text-gray-600">
                 <span>Phí vận chuyển</span>
-                <span className={shipping === 0 ? 'text-green-600 font-semibold' : ''}>
-                  {shipping === 0 ? 'Miễn phí' : formatCurrency(shipping)}
+                <span className={effectiveShipping === 0 ? 'text-green-600 font-semibold' : ''}>
+                  {effectiveShipping === 0 ? 'Miễn phí' : formatCurrency(effectiveShipping)}
                 </span>
               </div>
+
               <div className="flex justify-between font-bold text-base pt-2 border-t border-gray-200">
                 <span>Tổng cộng</span>
-                <span className="text-primary text-lg">{formatCurrency(total)}</span>
+                <span className="text-primary text-lg">{formatCurrency(effectiveTotal)}</span>
               </div>
             </div>
 

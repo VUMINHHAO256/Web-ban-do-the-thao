@@ -56,11 +56,14 @@ class ProductRepository {
         return result.recordset.map(r => this._mapProduct(r));
     }
 
-    // Tìm kiếm sản phẩm theo tên (có thể thêm brand filter)
-    async search(keyword, brand = null) {
+    // Tìm kiếm sản phẩm theo tên (có thể thêm brand filter, admin xem được sản phẩm ẩn)
+    async search(keyword, brand = null, isAdmin = false) {
         const pool = await this._getPool();
         const req = pool.request().input('keyword', sql.NVarChar, `%${keyword}%`);
-        let query = `SELECT * FROM Products WHERE name LIKE @keyword AND status = 'active'`;
+        let query = `SELECT * FROM Products WHERE name LIKE @keyword`;
+        if (!isAdmin) {
+            query += ` AND status = 'active'`;
+        }
         if (brand) {
             req.input('brand', sql.NVarChar, brand);
             query += ' AND brand = @brand';

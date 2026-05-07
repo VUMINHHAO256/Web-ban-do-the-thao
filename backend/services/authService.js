@@ -5,7 +5,19 @@ const userRepository = require('../repositories/userRepository');
 
 class AuthService {
     async registerUser(userData) {
-        const { firstName, lastName, email, phone, password } = userData;
+        let { firstName, lastName, fullName, email, phone, password } = userData;
+
+        // Hỗ trợ cả fullName (từ frontend) lẫn firstName/lastName riêng lẻ
+        if (fullName && (!firstName || !lastName)) {
+            const parts = fullName.trim().split(/\s+/);
+            if (parts.length === 1) {
+                firstName = parts[0];
+                lastName = parts[0];
+            } else {
+                lastName  = parts[parts.length - 1];          // họ ở cuối (VN convention)
+                firstName = parts.slice(0, -1).join(' ');     // tên đệm + tên
+            }
+        }
 
         if (!email || !password || !firstName || !lastName) {
             throw new Error('Vui lòng điền đủ thông tin cần thiết');
@@ -18,8 +30,8 @@ class AuthService {
         }
 
         // Validate password strength
-        if (password.length < 8) {
-            throw new Error('Mật khẩu phải có ít nhất 8 ký tự');
+        if (password.length < 6) {
+            throw new Error('Mật khẩu phải có ít nhất 6 ký tự');
         }
 
         const existingUser = await userRepository.findByEmail(email);
@@ -38,7 +50,22 @@ class AuthService {
             password: hashedPassword
         });
 
-        return { message: 'Đăng ký thành công! Vui lòng đăng nhập.' };
+        // Lấy lại user vừa tạo để trả về cho client (giúp admin đồng bộ)
+        const newUser = await userRepository.findByEmail(email);
+
+        return {
+            message: 'Đăng ký thành công! Vui lòng đăng nhập.',
+            user: newUser ? {
+                id:        newUser.id,
+                fullName:  `${firstName} ${lastName}`.trim(),
+                firstName: newUser.firstName,
+                lastName:  newUser.lastName,
+                email:     newUser.email,
+                phone:     newUser.phone  || '',
+                role:      newUser.role,
+                createdAt: newUser.createdAt
+            } : null
+        };
     }
 
     async loginUser(email, password) {

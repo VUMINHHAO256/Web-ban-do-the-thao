@@ -5,19 +5,26 @@ class ProductController {
     async getAll(req, res) {
         try {
             const { search, category, featured, isNew, status, brand } = req.query;
+            const isAdmin = req.user?.role === 'admin';
 
             // Nếu có từ khóa tìm kiếm → dùng riêng (có hỗ trợ brand)
             if (search) {
-                const results = await productService.searchProducts(search, brand);
+                const results = await productService.searchProducts(search, brand, isAdmin);
                 return res.json(results);
             }
 
             const filters = {};
             if (category)  filters.category  = category;
-            if (status)    filters.status    = status;
             if (featured)  filters.featured  = featured;
             if (isNew)     filters.isNew     = isNew;
             if (brand)     filters.brand     = brand;
+
+            // Admin truyền status tùy ý; khách hàng luôn chỉ thấy 'active'
+            if (isAdmin) {
+                if (status) filters.status = status; // admin có thể lọc theo status
+            } else {
+                filters.status = 'active'; // khách hàng chỉ thấy sản phẩm đang hoạt động
+            }
 
             const products = await productService.getAllProducts(filters);
             res.json(products);
@@ -28,7 +35,14 @@ class ProductController {
 
     async getById(req, res) {
         try {
+            const isAdmin = req.user?.role === 'admin';
             const product = await productService.getProductById(req.params.id);
+
+            // Khách hàng không được xem sản phẩm đang ẩn
+            if (!isAdmin && product?.status !== 'active') {
+                return res.status(404).json({ message: 'Sản phẩm không tồn tại' });
+            }
+
             res.json(product);
         } catch (error) {
             const status = error.message.includes('không tồn tại') ? 404 : 500;

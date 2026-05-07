@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Heart, ShoppingCart, Trash2, ArrowRight } from 'lucide-react';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useCart } from '../contexts/CartContext';
@@ -10,6 +10,7 @@ const formatCurrency = (n: number) =>
 const Wishlist: React.FC = () => {
   const { items, removeItem } = useWishlist();
   const { addItem } = useCart();
+  const navigate = useNavigate();
 
   const handleAddToCart = (item: typeof items[0]) => {
     addItem({ id: item.id, name: item.name, price: item.price, image: item.image });
@@ -21,9 +22,12 @@ const Wishlist: React.FC = () => {
         <Heart className="w-20 h-20 mx-auto text-gray-300 mb-4" />
         <h2 className="text-2xl font-bold text-gray-600 mb-2">Danh sách yêu thích trống</h2>
         <p className="text-gray-400 mb-6">Hãy thêm sản phẩm yêu thích của bạn</p>
-        <Link to="/products" className="btn-primary inline-flex items-center gap-2">
-          Khám phá sản phẩm <ArrowRight className="w-4 h-4" />
-        </Link>
+        <button
+          onClick={() => navigate('/')}
+          className="btn-primary inline-flex items-center gap-2"
+        >
+          Mua sắm ngay <ArrowRight className="w-4 h-4" />
+        </button>
       </div>
     );
   }

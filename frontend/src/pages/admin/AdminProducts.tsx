@@ -42,6 +42,7 @@ const AdminProducts: React.FC = () => {
   const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState('');
   const [category, setCategory] = useState('Tất cả');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage]         = useState(1);
 
   const [modal, setModal]   = useState<'add' | 'edit' | null>(null);
@@ -65,7 +66,8 @@ const AdminProducts: React.FC = () => {
   const filtered = products.filter((p) => {
     const matchCat    = category === 'Tất cả' || p.category === category;
     const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch;
+    const matchStatus = statusFilter === 'all' || p.status === statusFilter;
+    return matchCat && matchSearch && matchStatus;
   });
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paginated  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -119,6 +121,18 @@ const AdminProducts: React.FC = () => {
     } finally { setDelId(null); }
   };
 
+  const handleToggleStatus = async (p: Product) => {
+    const newStatus = p.status === 'active' ? 'inactive' : 'active';
+    try {
+      await api.put(`/products/${p.id}`, { status: newStatus });
+      setProducts(prev => prev.map(x => x.id === p.id ? { ...x, status: newStatus } : x));
+      setMsg(`Đã ${newStatus === 'active' ? 'hiện' : 'ẩn'} sản phẩm "${p.name}"`);
+      setTimeout(() => setMsg(''), 3000);
+    } catch (e: any) {
+      setMsg(e?.response?.data?.message || 'Lỗi cập nhật trạng thái');
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -152,6 +166,21 @@ const AdminProducts: React.FC = () => {
                 category === c ? 'bg-primary text-white border-primary' : 'border-gray-200 text-gray-600 hover:border-primary hover:text-primary'
               }`}>
               {CAT_LABELS[c] || c}
+            </button>
+          ))}
+        </div>
+        {/* Filter theo trạng thái */}
+        <div className="flex gap-1.5 ml-auto">
+          {[['all', 'Tất cả'], ['active', 'Hoạt động'], ['inactive', 'Ẩn']].map(([val, label]) => (
+            <button key={val} onClick={() => { setStatusFilter(val); setPage(1); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                statusFilter === val
+                  ? val === 'inactive' ? 'bg-gray-500 text-white border-gray-500'
+                    : val === 'active' ? 'bg-green-500 text-white border-green-500'
+                    : 'bg-primary text-white border-primary'
+                  : 'border-gray-200 text-gray-600 hover:border-primary hover:text-primary'
+              }`}>
+              {label}
             </button>
           ))}
         </div>
@@ -205,9 +234,15 @@ const AdminProducts: React.FC = () => {
                       <span className={`font-semibold ${p.stock === 0 ? 'text-red-500' : p.stock < 5 ? 'text-orange-500' : 'text-gray-700'}`}>{p.stock}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${p.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                        {p.status === 'active' ? 'Hoạt động' : 'Ẩn'}
-                      </span>
+                      <button
+                        onClick={() => handleToggleStatus(p)}
+                        title={p.status === 'active' ? 'Click để ẩn sản phẩm' : 'Click để hiện sản phẩm'}
+                        className={`text-xs px-2 py-0.5 rounded-full font-semibold cursor-pointer transition-all hover:opacity-80 ${
+                          p.status === 'active' ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}
+                      >
+                        {p.status === 'active' ? '✓ Hoạt động' : '● Ẩn'}
+                      </button>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">

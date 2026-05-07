@@ -99,12 +99,19 @@ class DashboardRepository {
         const result = await pool.request().query(`
             SELECT TOP 10
                 o.id,
-                o.customerName,
+                -- Ưu tiên tên hiện tại từ Users nếu có userId
+                COALESCE(
+                    CASE WHEN o.userId IS NOT NULL
+                         THEN u.firstName + ' ' + u.lastName
+                    END,
+                    o.customerName
+                ) AS customerName,
                 o.customerPhone,
                 o.totalAmount,
                 o.status,
                 o.createdAt
             FROM Orders o
+            LEFT JOIN Users u ON o.userId = u.id
             ORDER BY o.createdAt DESC
         `);
 

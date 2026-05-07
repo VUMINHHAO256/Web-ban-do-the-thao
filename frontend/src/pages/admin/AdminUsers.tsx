@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Search, X, Users, Trash2 } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Search, X, Users, Trash2, RefreshCw, ShieldCheck, User as UserIcon } from 'lucide-react';
 import api from '../../services/api';
 
 const fmt = (n: number | null | undefined) =>
@@ -8,24 +8,35 @@ const fmtDate = (s: string) => s ? new Date(s).toLocaleDateString('vi-VN') : '�
 
 interface User {
   id: number; fullName: string; email: string; phone: string;
-  createdAt: string; orderCount: number; totalSpent: number;
+  role?: string; createdAt: string; orderCount: number; totalSpent: number;
 }
 
 const AdminUsers: React.FC = () => {
-  const [users, setUsers]     = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch]   = useState('');
-  const [delId, setDelId]     = useState<number | null>(null);
-  const [msg, setMsg]         = useState('');
+  const [users, setUsers]       = useState<User[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch]     = useState('');
+  const [delId, setDelId]       = useState<number | null>(null);
+  const [msg, setMsg]           = useState('');
+
+  const fetchUsers = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    else setRefreshing(true);
+    try {
+      const res = await api.get('/users');
+      setUsers(res.data?.data || res.data || []);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const res = await api.get('/users');
-        setUsers(res.data?.data || res.data || []);
-      } finally { setLoading(false); }
-    })();
-  }, []);
+    fetchUsers();
+    // Auto-refresh mỗi 30 giây để đồng bộ user mới đăng ký
+    const interval = setInterval(() => fetchUsers(true), 30000);
+    return () => clearInterval(interval);
+  }, [fetchUsers]);
 
   const filtered = users.filter((u) =>
     !search ||
@@ -47,9 +58,20 @@ const AdminUsers: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-extrabold text-gray-800">Người dùng</h1>
-        <p className="text-gray-500 text-sm">{users.length} tài khoản</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-extrabold text-gray-800">Người dùng</h1>
+          <p className="text-gray-500 text-sm">{users.length} tài khoản</p>
+        </div>
+        <button
+          onClick={() => fetchUsers(true)}
+          disabled={refreshing}
+          title="Làm mới danh sách"
+          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          {refreshing ? 'Đang tải...' : 'Làm mới'}
+        </button>
       </div>
 
       {msg && (
@@ -79,7 +101,7 @@ const AdminUsers: React.FC = () => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 text-left">
-                  {['ID', 'Tên', 'Email', 'SĐT', 'Đơn hàng', 'Tổng chi tiêu', 'Ngày tạo', ''].map((h) => (
+                  {['ID', 'Tên', 'Email', 'SĐT', 'Vai trò', 'Đơn hàng', 'Tổng chi tiêu', 'Ngày tạo', ''].map((h) => (
                     <th key={h} className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
                   ))}
                 </tr>
@@ -98,6 +120,17 @@ const AdminUsers: React.FC = () => {
                     </td>
                     <td className="px-4 py-3 text-gray-500">{u.email}</td>
                     <td className="px-4 py-3 text-gray-500">{u.phone || '—'}</td>
+                    <td className="px-4 py-3">
+                      {u.role === 'admin' ? (
+                        <span className="inline-flex items-center gap-1 bg-purple-50 text-purple-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                          <ShieldCheck className="w-3 h-3" />Admin
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-600 text-xs font-medium px-2 py-0.5 rounded-full">
+                          <UserIcon className="w-3 h-3" />User
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-center">
                       <span className="bg-blue-50 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">{u.orderCount ?? 0}</span>
                     </td>

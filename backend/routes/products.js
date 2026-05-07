@@ -1,16 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const productController = require('../controllers/productController');
-const { authMiddleware, adminMiddleware } = require('../middleware/auth');
+const { authMiddleware, adminMiddleware, optionalAuth } = require('../middleware/auth');
 
-// GET /api/products?category=X&featured=true&isNew=true&search=X
-router.get('/', productController.getAll);
+// GET /api/products — optionalAuth để phân biệt admin vs khách
+router.get('/', optionalAuth, productController.getAll);
 
 // GET /api/products/categories — Thống kê số lượng theo danh mục
 router.get('/categories', productController.getCategoryStats);
 
-// GET /api/products/:id
-router.get('/:id', productController.getById);
+// GET /api/products/:id — optionalAuth để admin xem sản phẩm ẩn
+router.get('/:id', optionalAuth, productController.getById);
 
 // POST /api/products (Admin)
 router.post('/', authMiddleware, adminMiddleware, productController.create);

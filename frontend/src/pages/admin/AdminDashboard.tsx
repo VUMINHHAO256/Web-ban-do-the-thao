@@ -46,23 +46,57 @@ const RevenueChart: React.FC<{ data: any[] }> = ({ data }) => {
   const max = Math.max(...reversed.map((d) => d.revenue), 1);
   const months = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12'];
 
+  const CHART_H   = 110; // px tổng chiều cao vùng bar
+  const MAX_BAR_H = 65;  // % tối đa cột cao nhất — giới hạn không chiếm toàn bộ
+
+  const getBarPct = (val: number) => {
+    if (val <= 0) return 0;
+    // sqrt scale + giới hạn MAX_BAR_H
+    return Math.max((Math.sqrt(val) / Math.sqrt(max)) * MAX_BAR_H, 3);
+  };
+
   return (
-    <div className="flex items-end gap-1.5 h-36">
-      {reversed.map((d, i) => {
-        const pct = Math.max((d.revenue / max) * 100, 2);
-        return (
-          <div key={i} className="flex-1 flex flex-col items-center gap-1 group cursor-pointer">
-            <div className="relative w-full" style={{ height: 120 }}>
+    <div style={{ height: CHART_H + 20 }} className="relative">
+      {/* Đường kẻ ngang tham chiếu */}
+      <div className="absolute inset-x-0 border-b border-dashed border-gray-100" style={{ bottom: 20 }} />
+      <div className="absolute inset-x-0 border-b border-dashed border-gray-100" style={{ bottom: 20 + CHART_H * 0.33 }} />
+      <div className="absolute inset-x-0 border-b border-dashed border-gray-100" style={{ bottom: 20 + CHART_H * 0.66 }} />
+
+      {/* Bars */}
+      <div className="absolute inset-x-0 flex items-end gap-1" style={{ bottom: 20, top: 0 }}>
+        {reversed.map((d, i) => {
+          const pct = getBarPct(d.revenue);
+          const isCurrentMonth = i === reversed.length - 1;
+          const label = months[d.month - 1];
+          return (
+            <div key={i} className="flex-1 flex flex-col items-center group min-w-0 h-full justify-end">
               <div
-                className="absolute bottom-0 w-full bg-primary/80 hover:bg-primary rounded-t-sm transition-all"
+                className={`w-full rounded-t transition-all duration-500 cursor-pointer ${
+                  isCurrentMonth ? 'bg-primary' : d.revenue > 0 ? 'bg-primary/50 group-hover:bg-primary/70' : 'bg-gray-100'
+                }`}
                 style={{ height: `${pct}%` }}
-                title={`${months[d.month - 1]}: ${fmt(d.revenue)}`}
+                title={d.revenue > 0
+                  ? `${label}: ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(d.revenue)}`
+                  : `${label}: Chưa có doanh thu`}
               />
             </div>
-            <span className="text-xs text-gray-400">{months[d.month - 1]}</span>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
+
+      {/* Month labels */}
+      <div className="absolute inset-x-0 flex gap-1" style={{ bottom: 0, height: 18 }}>
+        {reversed.map((d, i) => {
+          const isCurrentMonth = i === reversed.length - 1;
+          return (
+            <div key={i} className="flex-1 flex items-center justify-center min-w-0">
+              <span className={`text-[9px] leading-none ${isCurrentMonth ? 'text-primary font-bold' : 'text-gray-400'}`}>
+                {months[d.month - 1]}
+              </span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
@@ -159,10 +193,10 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {/* ── Charts Row ─────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* Revenue Chart */}
-        <div className="lg:col-span-3 bg-white rounded-xl shadow-sm p-5">
+        <div className="bg-white rounded-xl shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-bold text-gray-800">Doanh thu theo tháng</h2>
             <span className="text-xs text-gray-400">12 tháng gần nhất</span>
@@ -177,7 +211,7 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Quick Stats */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-5">
+        <div className="bg-white rounded-xl shadow-sm p-5">
           <h2 className="font-bold text-gray-800 mb-4">Trạng thái đơn hàng</h2>
           <div className="space-y-3">
             {[

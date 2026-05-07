@@ -20,6 +20,7 @@ class OrderService {
             throw new Error(`Phương thức thanh toán không hợp lệ. Cho phép: ${VALID_PAYMENT_METHODS.join(', ')}`);
         }
 
+        // promoCode và discountAmount đã được validate ở controller, truyền thẳng xuống
         const orderId = await orderRepository.createOrder(orderData, items);
         return { message: 'Đặt hàng thành công', orderId };
     }
