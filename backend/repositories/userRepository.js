@@ -80,6 +80,15 @@ class UserRepository {
             .query('DELETE FROM Users WHERE id = @id');
     }
 
+    // Dùng NỘI BỘ khi cần so sánh mật khẩu (changePassword)
+    async findByIdWithPassword(id) {
+        const pool = await this._getPool();
+        const result = await pool.request()
+            .input('id', sql.Int, id)
+            .query('SELECT id, firstName, lastName, email, phone, address, role, password, createdAt FROM Users WHERE id = @id');
+        return result.recordset[0];
+    }
+
     async updatePassword(id, hashedPassword) {
         const pool = await this._getPool();
         await pool.request()

@@ -43,9 +43,14 @@ class UserService {
     }
 
     async changePassword(id, currentPassword, newPassword) {
-        const user = await userRepository.findById(id);
+        // Dùng findByIdWithPassword để lấy password hash (findById không SELECT password)
+        const user = await userRepository.findByIdWithPassword(id);
         if (!user) {
             throw new Error('Người dùng không tồn tại');
+        }
+
+        if (!currentPassword || !user.password) {
+            throw new Error('Thông tin mật khẩu không hợp lệ');
         }
 
         const isMatch = await bcrypt.compare(currentPassword, user.password);
